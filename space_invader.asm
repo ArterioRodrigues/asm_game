@@ -13,6 +13,16 @@ push 0A000h
 pop es				; ES -> A0000h
 
 ;; GAME LOOP ========================================================================
+game_loop:
+	mov al,04h
+	mov cx, 320*200
+	xor di, di
+	rep stosb
+
+	mov di, 320*100 + 160
+	
+	test_loop:
+	mov ax, 01h
 
 	;; Delay timer - 1 tick delay (1 tick = 18.2/second)
 	delay_timer:
@@ -21,12 +31,17 @@ pop es				; ES -> A0000h
 		.wait:
 			cmp [046ch], ax
 			jl .wait
+
+	stosb
+	
+	jmp test_loop
 jmp game_loop
 
 
 ;; END GAME & REST ==================================================================
-cli
-hlt
+game_over:
+	cli
+	hlt
 
 times 510-($-$$) db 0
 ;;section boot_signature start=7DFEh
