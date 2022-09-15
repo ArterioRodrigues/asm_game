@@ -88,6 +88,7 @@ game_loop:
 
 	cmp byte [si+19], cl	;[change alien]
 	mov cl, 4
+	
 	jg draw_next_alien_row		; Nope, use normal sprite
 
 	add di, cx				; Yes use alternate sprite (cx = 4)
