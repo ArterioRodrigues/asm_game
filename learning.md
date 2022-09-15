@@ -35,3 +35,42 @@ num_aliens          equ 0FA2Fh  ; # of aliens alive
 direction           equ 0FA30h  ; # pixels that aliens move x direction
 move_timer          equ 0FA31h  ; 2 byte (using BP) # of ticks before a alien     move
 change_alien        equ 0FA33h  ; Change alien sprite
+
+
+4. To enter mode 13h just use the screen interupt
+
+     mov ax,0013h 
+     int 10h
+
+To exit mode 13h simply return the screen to textmode
+
+     mov ax,0003h 
+     int 10h
+
+To put a pixel on the screen simply you write something to the screen memory. 
+Here's a fast way to put a pixel at x,y
+
+    mov ax,0a000h 
+    mov es,ax 
+    mov ax,y 
+    mov bx,y 
+    shl ax,8 
+    shl bx,6 
+    add ax,bx 
+    add ax,x 
+    mov di,ax 
+    mov al,color 
+    mov es:[di],al
+
+4. movsw, movsb, movsd, movsq are instructions used to copy data from the source location DS:(ER)SI to destination location ES:(ER)DI.
+
+They are useful because there is no mem-to-mem move instruction in IA32e.
+
+They are meant to be used in cycles (for example by using the rep prefix), so besides moving the data they also increments (if DF flag, Direction Flag, is 0) or decrements (if DF flag is 1) the pointers to the source and destination locations, i.e. the (ER)SI and (ER)DI registers.
+
+From the assembly programmer perspective the memory is byte-addressable, it means that each address store one byte.
+
+movsb moves a byte, so the register are incremented/decremented by 1.
+movsw moves a WORD (2 bytes), so the register are incremented/decremented by 2.
+movsd moves a DWORD (Double Word, 2 Word, 4 bytes), so the register are incremented/decremented by 4.
+movsq moves a QWORD (Quad Word, 4 words, 8 bytes), so the register are incremented/decremented by 8.

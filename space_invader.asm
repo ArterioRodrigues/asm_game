@@ -6,13 +6,12 @@
 bits 16
 org 7C00h
 ;; DEFINE VARIABLE AFTER SCREEN MEMORY 320*200 = 64000 FA00h ========================
-testfile equ 0FA00h
 sprites 			equ	0FA00h
 alien1				equ 0FA00h
 alien2				equ 0FA04h
 ship				equ 0FA08h
 barrierarr 			equ 0FA0CH
-alienArr 			equ 0FA20h	; 2 words - 32 bits
+alienArr 			equ 0FA20h	; 2 words - 32 bit
 PlayerX 			equ 0FA24h
 shotsArr			equ 0FA25h	; 4 xy shot values - 8 bits
 alienY				equ 0FA2Eh
@@ -86,9 +85,11 @@ game_loop:
 	mov si, alienArr
 	mov bl, ALIEN_COLOR
 	mov ax, [si+13]			;[alienY] == [si+offset]
+
 	cmp byte [si+19], cl	;[change alien]
 	mov cl, 4
 	jg draw_next_alien_row		; Nope, use normal sprite
+
 	add di, cx				; Yes use alternate sprite (cx = 4)
 	
 	draw_next_alien_row:
