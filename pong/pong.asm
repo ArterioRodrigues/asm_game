@@ -19,6 +19,7 @@ KEY_R		equ 0x13
 SCREENW		equ 80
 SCREENH		equ 24
 PADDLEH		equ 5
+
 ;; VARIABLES ======================================================
 drawColor: 	db 0xF0
 playerY:	dw 10 	; Start a row 10
@@ -26,6 +27,10 @@ cpuY: 		dw 10
 
 ballX: 		dw 66
 ballY: 		dw 12
+ballVelY: 	db -1
+ballVelX: 	db -1
+
+
 
 gameplay:
 	;; GAMEPLAY ===================================================
@@ -61,6 +66,7 @@ gameplay:
 		add bx, CPUX
 		
 		mov cl, PADDLEH
+
 		.draw_player_loop:
 			stosw
 			mov word [es:bx], ax 
@@ -119,11 +125,36 @@ gameplay:
 
 
 		;; Move Ball ------------------------------------------------
+		move_ball:
+			imul di, [ballY], ROW_LENGTH
+			add di, [ballX]
+			mov word [es:di], 0x2000
+			
+			mov bl, [ballVelX]
+			add [ballX], bl
+			mov bl, [ballVelY]
+			add [ballY], bl
 
+			.chech_hit_top:
+				cmp word [ballY], 0
+				jg .check_hit_bottom
+				neg byte [ballVelY]
+				jmp end_collison_check
+			
+			.check_hit_bottom:
+				cmp word[ballY], 24
+				jl check_player_hit
+				neg byte [ballVelY]
+				jmp end_collison_check
+				
+			.check_player_hit:
+				
+			.check_cpu_hit:
+		end_collison_check:
 		;;Delay timer based on Clock --------------------------------
 		mov bx, [0x46C]
 		inc bx
-		;inc bx
+		inc bx
 		.delay:
 			cmp [0x46C], bx
 			jl .delay			;if [0x46C] < bx jump to delay until they are equ(delay 2 tics)
