@@ -51,6 +51,7 @@ gameplay:
 		
 		;; Middle dash ---------------------------------------------
 		mov ah, [drawColor]
+
 		mov di, 78
 		mov cl, 13 			; Counter for loop tell it to go 13 times
 		.draw_middle_loop:
@@ -76,10 +77,7 @@ gameplay:
 			loop .draw_player_loop
 
 	
-		;; Draw Ball -----------------------------------------------
-		imul di, [ballY], ROW_LENGTH
-		add di, [ballX]
-		mov word [es:di], 0x2000
+		call draw_ball
 
 		;; Get Player Input -----------------------------------------
 		mov ah, 1
@@ -122,14 +120,27 @@ gameplay:
 
 		;; Move Cpu --------------------------------------------------
 		move_cpu:
+			.move_cpu_up:
+				mov bx, [cpuY]
+				cmp bx, [ballY]
+				jle .move_cpu_down
+				
+				dec word [cpuY]
+				jnz move_ball
+				inc word [cpuY]
 
+			.move_cpu_down:
+				add bx, PADDLEH
+				cmp bx, [ballY]
+				jg move_ball
+				inc word [cpuY]
+				cmp word [cpuY], 24
+
+				jl move_ball
+				dec word [cpuY]
 
 		;; Move Ball ------------------------------------------------
-		move_ball:
-			imul di, [ballY], ROW_LENGTH
-			add di, [ballX]
-			mov word [es:di], 0x2000
-			
+		move_ball:	
 			mov bl, [ballVelX]
 			add [ballX], bl
 			mov bl, [ballVelY]
@@ -143,14 +154,50 @@ gameplay:
 			
 			.check_hit_bottom:
 				cmp word[ballY], 24
-				jl check_player_hit
+				jl .check_player_hit
 				neg byte [ballVelY]
 				jmp end_collison_check
 				
 			.check_player_hit:
-				
+				cmp word [ballX], PLAYERX
+				jne .check_cpu_hit
+
+				mov bx, [playerY]
+				cmp bx, [ballY]
+
+				jg .check_cpu_hit
+
+				add bx, PADDLEH
+				cmp bx, [ballY]
+
+				jl .check_cpu_hit
+
+				neg byte [ballVelX]
+				jmp end_collison_check
+
+			
 			.check_cpu_hit:
+				cmp word [ballX], CPUX
+				jne end_collison_check
+
+				mov bx, [cpuY]
+				cmp bx, [ballY]
+
+				jg end_collison_check
+
+				add bx, PADDLEH
+				cmp bx, [ballY]
+
+				jl end_collison_check
+
+				neg byte [ballVelX]
+				jmp end_collison_check
+
+
 		end_collison_check:
+		
+		
+		call draw_ball
 		;;Delay timer based on Clock --------------------------------
 		mov bx, [0x46C]
 		inc bx
@@ -158,8 +205,14 @@ gameplay:
 		.delay:
 			cmp [0x46C], bx
 			jl .delay			;if [0x46C] < bx jump to delay until they are equ(delay 2 tics)
-
+		
 	jmp game_loop
+draw_ball:
+		imul di, [ballY], ROW_LENGTH
+		add di, [ballX]
+		mov word [es:di], 0x2000
+		ret
 
-	times 510-($-$$) db 0
-	dw 0xAA55
+times 510-($-$$) db 0
+dw 0xAA55
+
