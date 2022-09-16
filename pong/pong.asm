@@ -207,6 +207,8 @@ gameplay:
 			jl .delay			;if [0x46C] < bx jump to delay until they are equ(delay 2 tics)
 		
 	jmp game_loop
+
+	
 draw_ball:
 		imul di, [ballY], ROW_LENGTH
 		add di, [ballX]
