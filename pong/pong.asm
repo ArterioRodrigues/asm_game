@@ -4,40 +4,131 @@
 
 bits 16
 org 0x7C00
+
+jmp gameplay
+
+;; CONSTANSTS =====================================================
+VIDMEN 		equ 0xB800
+ROW_LENGTH 	equ 160
+PLAYERX		equ 4
+CPUX		equ 154	
+KEY_W		equ 0x11
+KEY_S		equ 0x1F
+KEY_C		equ 0x2E
+KEY_R		equ 0x13
+SCREENW		equ 80
+SCREENH		equ 24
+PADDLEH		equ 5
+;; VARIABLES ======================================================
+drawColor: 	db 0xF0
+playerY:	dw 10 	; Start a row 10
+cpuY: 		dw 10
+
+ballX: 		dw 66
+ballY: 		dw 12
+
+gameplay:
+	;; GAMEPLAY ===================================================
+	mov ax, 0x0003		; Setup text mode for x86 
+	int 0x10
 	
-mov ax, 0x0003		; Setup text mode for x86 
-int 0x10
-	
-mov ax, 0xB800		; Video offset
-mov es, ax 			; DI <- 0xB800
+	mov ax, VIDMEN		; Video offset
+	mov es, ax 			; DI <- 0xB800
  	
 
-game_loop:
+	game_loop:
 		
-	;; Clear the screen by earsing di values 
-	xor ax, ax
-	xor di, di
-	mov cx, 80*25
-	rep stosw
+		;; Clear the screen by earsing di values -------------------
+		xor ax, ax
+		xor di, di
+		mov cx, 80*25
+		rep stosw
 		
-	;; Middle dash 
-	mov al, 0xF0
-	mov di, 79
-	mov cl, 13 			; Counter for loop tell it to go 13 times
-	.draw_middle_loop:
-		stosw
-		add di, 320 - 2
-		loop .draw_middle_loop	
+		;; Middle dash ---------------------------------------------
+		mov ah, [drawColor]
+		mov di, 78
+		mov cl, 13 			; Counter for loop tell it to go 13 times
+		.draw_middle_loop:
+			stosw
+			add di, 2*ROW_LENGTH - 2
+			loop .draw_middle_loop	
 		
-	;;Delay timer based on the clock ticker
-	mov bx, [0x46C]
-	inc bx
-	inc bx
-	.delay:
-		cmp [0x46C], bx
-		jl .delay			;if [0x46C] < bx jump to delay until they are equ(delay 2 tics)
+		;; Draw player/CPU ------------------------------------------
+		imul di, [playerY], ROW_LENGTH
+		add di, PLAYERX
 
-jmp game_loop
+		imul bx, [cpuY], ROW_LENGTH
+		add bx, CPUX
+		
+		mov cl, PADDLEH
+		.draw_player_loop:
+			stosw
+			mov word [es:bx], ax 
 
-times 510-($-$$) db 0
-dw 0xAA55
+			add bx, ROW_LENGTH 
+			add di, ROW_LENGTH - 2
+			loop .draw_player_loop
+
+	
+		;; Draw Ball -----------------------------------------------
+		imul di, [ballY], ROW_LENGTH
+		add di, [ballX]
+		mov word [es:di], 0x2000
+
+		;; Get Player Input -----------------------------------------
+		mov ah, 1
+		int 0x16
+		jz move_cpu
+
+		cbw 
+		int 0x16
+
+		cmp ah, KEY_W
+		je  w_pressed
+		cmp ah, KEY_S
+		je  s_pressed
+		cmp ah, KEY_C
+		je  c_pressed
+		cmp ah, KEY_R
+		je  r_pressed
+		
+		jmp move_cpu
+
+		;; PRESSED KEYS COMMANDS ------------------------------------
+		w_pressed:
+			dec word [playerY]
+			jge move_cpu
+			inc word [playerY]
+			jmp move_cpu
+			
+		s_pressed:				
+			cmp word [playerY], SCREENH - PADDLEH
+			jg move_cpu
+			inc word [playerY]	
+			jmp move_cpu
+
+		c_pressed:
+			add word [drawColor], 0x10
+			jmp move_cpu
+		r_pressed:
+			int 0x19					; Reloads bootsector
+		
+
+		;; Move Cpu --------------------------------------------------
+		move_cpu:
+
+
+		;; Move Ball ------------------------------------------------
+
+		;;Delay timer based on Clock --------------------------------
+		mov bx, [0x46C]
+		inc bx
+		;inc bx
+		.delay:
+			cmp [0x46C], bx
+			jl .delay			;if [0x46C] < bx jump to delay until they are equ(delay 2 tics)
+
+	jmp game_loop
+
+	times 510-($-$$) db 0
+	dw 0xAA55
