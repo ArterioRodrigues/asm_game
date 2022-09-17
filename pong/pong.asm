@@ -19,7 +19,10 @@ KEY_R		equ 0x13
 SCREENW		equ 80
 SCREENH		equ 24
 PADDLEH		equ 5
-
+PLAYERBALLSTARTX equ 66
+CPUBALLSTARTX 	equ 90
+WINCOND		equ 3
+BALLSTARTY 	equ 7
 ;; VARIABLES ======================================================
 drawColor: 	db 0xF0
 playerY:	dw 10 	; Start a row 10
@@ -29,7 +32,7 @@ ballX: 		dw 66
 ballY: 		dw 12
 ballVelY: 	db -1
 ballVelX: 	db -1
-playerScore: db 0
+playerScore: 	db 0
 cpuScore: 	db 0
 
 
@@ -83,7 +86,18 @@ gameplay:
 		mov word [es:di], 0x2000
 
 		;; Draw Scores
+		xor bl, bl
+		mov di, ROW_LENGTH + 66
+		mov bl, 0x30
+		add bl, [playerScore]
+		mov bh, 0x0C
 
+		mov word [es:di], bx
+
+		add di, 24
+		mov bl, 0x30
+		add bl, [cpuScore]
+		mov word [es:di], bx
 		;; Get Player Input -----------------------------------------
 		mov ah, 1
 		int 0x16
@@ -128,18 +142,19 @@ gameplay:
 			.move_cpu_up:
 				mov bx, [cpuY]
 				cmp bx, [ballY]
-				jle .move_cpu_down
+				jl .move_cpu_down
 				
 				dec word [cpuY]
-				jnz move_ball
+				jge move_ball
 				inc word [cpuY]
+				jmp move_ball
 
 			.move_cpu_down:
 				add bx, PADDLEH
 				cmp bx, [ballY]
 				jg move_ball
 				inc word [cpuY]
-				cmp word [cpuY], 24
+				cmp word [cpuY], 25
 
 				jl move_ball
 				dec word [cpuY]
@@ -201,16 +216,23 @@ gameplay:
 				cmp word [ballX], 0
 				jg .check_hit_right
 				inc byte [cpuScore]
-				jmp end_collison_check
+				cmp byte [cpuScore], WINCOND
+				je game_over
+				mov word [ballX], PLAYERBALLSTARTX
+				jmp rest_ball
 
 			.check_hit_right:
 				cmp word [ballX], ROW_LENGTH
 				jl end_collison_check
 				inc byte [playerScore]
+				cmp byte [playerScore], WINCOND
+				je game_over
+				mov word [ballX], CPUBALLSTARTX
+		rest_ball:			
+			mov word [ballY], BALLSTARTY
 
 		end_collison_check:
-		
-		
+
 		imul di, [ballY], ROW_LENGTH
 		add di, [ballX]
 		mov word [es:di], 0x2000
@@ -224,7 +246,19 @@ gameplay:
 			jl .delay			;if [0x46C] < bx jump to delay until they are equ(delay 2 tics)
 		
 	jmp game_loop
-		
+game_over:
+	cmp byte [playerScore], WINCOND
+	je game_won 
+	jnp game_lost 
+
+game_won:
+	mov dword [es:0000], 0F450F57h
+	mov dword [es:0004], 0F210F4Eh
+game_lost:
+	mov dword [es:0000], 0F4F0F4Ch
+	mov dword [es:0004], 0F450F53h
+	hlt
+
 
 times 510-($-$$) db 0
 dw 0xAA55
