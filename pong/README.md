@@ -21,7 +21,7 @@ To end the boot sector we have to put **0xaa55** which tell the CPU this code is
 
 ## Game Loop 
 
-<img src = "./assests/video.png"/>
+<img src = "video.png"/>
 
 The game loop is made up in several section the first is to set up the text mode to place symbols on we use the follow code for this:
 
@@ -34,7 +34,7 @@ then the game loops start where we have the follow sections:
 * Check key press if a certain key was press then move cpu or reset game
 
 ### Drawing the cpu player and ball
-<img src = "./assests/drawing.png">
+<img src = "drawing.png">
 
 The x86 arthethicture comes with various interuptes the we use the key board interupt to keep listening for the following keys W, S, C, R. The interupt we called was 
 
@@ -49,12 +49,12 @@ int 0x16
 ```
 
 ### Key Press Logic
-<img src = "./assests/keypress.png">
+<img src = "keypress.png">
 
 ## Game Play
 
 If the player or cpu score 3 points first then their win and a message appears to let the player know. Their is also a counter to hold the user score. If a player it the left or right screen then a point is awarded and the ball is reset on the loser's side.
 
-<img src = "./assests/lose_game.png">
+<img src = "lose_game.png">
 
 
