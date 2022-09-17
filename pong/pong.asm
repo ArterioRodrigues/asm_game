@@ -29,7 +29,8 @@ ballX: 		dw 66
 ballY: 		dw 12
 ballVelY: 	db -1
 ballVelX: 	db -1
-
+playerScore: db 0
+cpuScore: 	db 0
 
 
 gameplay:
@@ -76,8 +77,12 @@ gameplay:
 			add di, ROW_LENGTH - 2
 			loop .draw_player_loop
 
-	
-		call draw_ball
+		;; Draw Ball ------------------------------------------------
+		imul di, [ballY], ROW_LENGTH
+		add di, [ballX]
+		mov word [es:di], 0x2000
+
+		;; Draw Scores
 
 		;; Get Player Input -----------------------------------------
 		mov ah, 1
@@ -150,13 +155,13 @@ gameplay:
 				cmp word [ballY], 0
 				jg .check_hit_bottom
 				neg byte [ballVelY]
-				jmp end_collison_check
+				jmp .check_hit_left
 			
 			.check_hit_bottom:
 				cmp word[ballY], 24
 				jl .check_player_hit
 				neg byte [ballVelY]
-				jmp end_collison_check
+				jmp .check_hit_left
 				
 			.check_player_hit:
 				cmp word [ballX], PLAYERX
@@ -173,31 +178,43 @@ gameplay:
 				jl .check_cpu_hit
 
 				neg byte [ballVelX]
-				jmp end_collison_check
+				jmp .check_hit_left
 
 			
 			.check_cpu_hit:
 				cmp word [ballX], CPUX
-				jne end_collison_check
+				jne .check_hit_left
 
 				mov bx, [cpuY]
 				cmp bx, [ballY]
 
-				jg end_collison_check
+				jg .check_hit_left
 
 				add bx, PADDLEH
 				cmp bx, [ballY]
 
-				jl end_collison_check
-
+				jl .check_hit_left
 				neg byte [ballVelX]
+			
+
+			.check_hit_left:
+				cmp word [ballX], 0
+				jg .check_hit_right
+				inc byte [cpuScore]
 				jmp end_collison_check
 
+			.check_hit_right:
+				cmp word [ballX], ROW_LENGTH
+				jl end_collison_check
+				inc byte [playerScore]
 
 		end_collison_check:
 		
 		
-		call draw_ball
+		imul di, [ballY], ROW_LENGTH
+		add di, [ballX]
+		mov word [es:di], 0x2000
+	
 		;;Delay timer based on Clock --------------------------------
 		mov bx, [0x46C]
 		inc bx
@@ -207,13 +224,7 @@ gameplay:
 			jl .delay			;if [0x46C] < bx jump to delay until they are equ(delay 2 tics)
 		
 	jmp game_loop
-
-	
-draw_ball:
-		imul di, [ballY], ROW_LENGTH
-		add di, [ballX]
-		mov word [es:di], 0x2000
-		ret
+		
 
 times 510-($-$$) db 0
 dw 0xAA55
